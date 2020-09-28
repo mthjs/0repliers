@@ -49,7 +49,7 @@ Which is as quite easy. At the root of this project, run the following:
 $ git submodule update --init --recursive
 ```
 
-After which, we should have the wonderful test-framework [Catch2](Catch2)
+After which, we should have the wonderful test-framework [Catch2]
 available. Presuming we're still at the root of this project, we'll do the
 following to build and run the tests:
 
@@ -60,4 +60,4 @@ cmake ..
 make -j6 tests; ./tests/test
 ```
 
-Catch2: https://github.com/catchorg/Catch2
+[Catch2]: https://github.com/catchorg/Catch2
