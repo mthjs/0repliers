@@ -1,7 +1,7 @@
 # 0repliers
 
-> Use a ZMQ_ROUTER socket as the one and only socket for all ZMQ communication
-> in a C++11 system.
+> Only listen as a single ZMQ_ROUTER socket to provide a server which can
+> handle multiple clients.
 
 ## Why?
 
