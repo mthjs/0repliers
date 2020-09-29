@@ -49,11 +49,11 @@ struct Transport
    {
       std::lock_guard<std::mutex> lock(__lock);
       if (zmq_send(__socket, identity.c_str(), identity.length(), ZMQ_SNDMORE) == -1)
-         throw std::runtime_error(std::string("Connection::write: unable to send identity-frame - ") + zmq_strerror(zmq_errno()));
+         throw std::runtime_error(std::string("Transport::write: unable to send identity-frame - ") + zmq_strerror(zmq_errno()));
       if (zmq_send(__socket, "", 0, ZMQ_SNDMORE) == -1)
-         throw std::runtime_error(std::string("Connection::write: unable to send delimiter-frame - ") + zmq_strerror(zmq_errno()));
+         throw std::runtime_error(std::string("Transport::write: unable to send delimiter-frame - ") + zmq_strerror(zmq_errno()));
       if (zmq_send(__socket, payload.c_str(), payload.length(), 0) == -1)
-         throw std::runtime_error(std::string("Connection::write: unable to send the payload - ") + zmq_strerror(zmq_errno()));
+         throw std::runtime_error(std::string("Transport::write: unable to send the payload - ") + zmq_strerror(zmq_errno()));
    };
 
 private:
@@ -63,7 +63,7 @@ private:
       zmq_msg_init(&frame);
       int received = zmq_msg_recv(&frame, __socket, 0);
       if (received == -1)
-         throw std::runtime_error(std::string("Listener::__receive_frame: unable to receive - ") + zmq_strerror(zmq_errno()));
+         throw std::runtime_error(std::string("Transport::__receive_frame: unable to receive - ") + zmq_strerror(zmq_errno()));
       if (received == 0)
          return std::string("");
       std::string str(static_cast<const char*>(zmq_msg_data(&frame)), zmq_msg_size(&frame));
