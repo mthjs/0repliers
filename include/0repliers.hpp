@@ -5,7 +5,7 @@
 #include <string>
 
 /**
- * Request is the request That Listener accepted.
+ * Request is a request that Listener has accepted.
  */
 struct Request
 {
