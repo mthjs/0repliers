@@ -93,10 +93,16 @@ struct RequestImpl : Request
 
    void reply(const std::string &answer)
    {
+      std::lock_guard<std::mutex> lock(__lock);
+      if (__replied)
+         throw std::logic_error("already replied before");
+      __replied = true;
       __writer->write(__identity, answer);
    };
 
 private:
+   std::mutex __lock;
+   bool __replied;
    std::shared_ptr<Writer> __writer;
    std::string __identity;
    std::string __payload;

@@ -75,8 +75,28 @@ TEST_CASE("a listener accepts new requests", "[Listener]") {
       client.join();
    }
 
-   SECTION("even if they come from the same client") {
+   SECTION("which only can be replied to once") {
       const std::string addr = "tcp://0.0.0.0:8765";
+
+      std::thread listener([addr](){
+         auto listener = listen(addr);
+         auto request = listener->accept();
+         request->reply(request->read());
+         REQUIRE_THROWS_AS(request->reply("replying twice is illegal"), std::logic_error);
+      });
+
+      std::thread client([addr](){
+         Client client(addr);
+         client.send("ohai Mark");
+         REQUIRE(client.receive() == "ohai Mark");
+      });
+
+      listener.join();
+      client.join();
+   }
+
+   SECTION("even if they come from the same client") {
+      const std::string addr = "tcp://0.0.0.0:7654";
 
       std::thread listener([addr](){
          auto listener = listen(addr);
@@ -99,7 +119,7 @@ TEST_CASE("a listener accepts new requests", "[Listener]") {
    }
 
    SECTION("and allows to handle them concurrently") {
-      const std::string addr = "tcp://0.0.0.0:7654";
+      const std::string addr = "tcp://0.0.0.0:6543";
 
       std::thread listener([addr](){
          auto listener = listen(addr);
