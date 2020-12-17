@@ -1,5 +1,7 @@
 #define CATCH_CONFIG_MAIN
 
+#define CATCH_CONFIG_ENABLE_BENCHMARKING
+
 #include <0repliers.hpp>
 
 #include <catch2/catch.hpp>
@@ -154,5 +156,65 @@ TEST_CASE("a listener accepts new requests", "[Listener]") {
       dewey.join();
       louie.join();
    }
+}
+
+SCENARIO("benchmarking") {
+   const int n(100);
+   const std::string addr = "tcp://0.0.0.0:5432"; // sorry mr. elephant...
+
+   std::thread listener([addr](){
+      auto listener = listen(addr);
+      for (;;) {
+         std::thread worker([](std::unique_ptr<Request>&& request){
+            std::string payload = request->read();
+            request->reply(payload);
+         }, listener->accept());
+         worker.detach();
+      }
+   });
+   listener.detach();
+
+   // BENCHMARK("shouting into the void") {
+   //    auto router = route("tcp://0.0.0.0:9999");
+   //    for (int i = 0; i < n; i++) {
+   //       router->write(std::to_string(i), "Hello?");
+   //    }
+   // };
+
+   // BENCHMARK("one client") {
+   //    Client client(addr);
+   //    for (int i = 0; i < n; i++) {
+   //       client.send("Hello, you!");
+   //       client.receive();
+   //    }
+   // };
+
+   BENCHMARK("three clients") {
+      std::thread h([addr](){
+         for (int i = 0; i < n; i++) {
+            Client huey(addr);
+            huey.send("Huey");
+            // huey.receive();
+         }
+      });
+      std::thread d([addr](){
+         for (int i = 0; i < n; i++) {
+            Client dewey(addr);
+            dewey.send("Dewey");
+            // dewey.receive();
+         }
+      });
+      std::thread l([addr](){
+         for (int i = 0; i < n; i++) {
+            Client louie(addr);
+            louie.send("Louie");
+            // louie.receive();
+         }
+      });
+
+      h.join();
+      d.join();
+      l.join();
+   };
 }
 

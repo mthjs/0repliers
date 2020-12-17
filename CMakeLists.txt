@@ -10,6 +10,13 @@ project(
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# common
+set(CMAKE_CXX_FLAGS "-Wall -Werror -O3")
+# debug
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -g")
+# release
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3 -pedantic")
+
 add_library(
    0repliers SHARED
    src/0repliers.cpp

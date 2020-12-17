@@ -4,6 +4,16 @@
 #include <memory>
 #include <string>
 
+struct Writer
+{
+   virtual void write(const std::string &identity, const std::string &payload) = 0;
+};
+
+struct Router : Writer
+{
+   virtual void read(std::string& identiy, std::string& payload) = 0;
+};
+
 /**
  * Request is a request that Listener has accepted.
  */
@@ -38,5 +48,7 @@ struct Listener
  * listen creates a new listener which'll start listening on the given address.
  */
 std::unique_ptr<Listener> listen(std::string address);
+
+std::shared_ptr<Router> route(std::string address);
 
 #endif

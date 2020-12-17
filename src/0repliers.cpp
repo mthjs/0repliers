@@ -2,31 +2,28 @@
 
 #include <zmq.h>
 
-#include <exception>
+#include <chrono>
 #include <mutex>
+#include <stdexcept>
+#include <thread>
 
-struct Writer
+struct RouterImpl
+   : Router
 {
-   virtual void write(const std::string &identity, const std::string &payload) = 0;
-};
-
-struct Transport
-   : Writer
-{
-   Transport(std::string address)
+   RouterImpl(std::string address)
       : __address(address)
    {
       __context = zmq_ctx_new();
       if (!__context)
-         throw std::runtime_error(std::string("Transport::Transport: ") + zmq_strerror(zmq_errno()));
+         throw std::runtime_error(std::string("RouterImpl::RouterImpl: ") + zmq_strerror(zmq_errno()));
       __socket = zmq_socket(__context, ZMQ_ROUTER);
       if (!__socket)
-         throw std::runtime_error(std::string("Transport::Transport: ") + zmq_strerror(zmq_errno()));
+         throw std::runtime_error(std::string("RouterImpl::RouterImpl: ") + zmq_strerror(zmq_errno()));
       if (zmq_bind(__socket, __address.c_str()) == -1)
-         throw std::runtime_error(std::string("Transport::Transport: ") + zmq_strerror(zmq_errno()));
+         throw std::runtime_error(std::string("RouterImpl::RouterImpl: ") + zmq_strerror(zmq_errno()));
    };
 
-   ~Transport()
+   ~RouterImpl()
    {
       zmq_unbind(__socket, __address.c_str());
       zmq_close(__socket);
@@ -48,12 +45,13 @@ struct Transport
    void write(const std::string &identity, const std::string &payload)
    {
       std::lock_guard<std::mutex> lock(__lock);
+      // std::this_thread::sleep_for(std::chrono::milliseconds(1));
       if (zmq_send(__socket, identity.c_str(), identity.length(), ZMQ_SNDMORE) == -1)
-         throw std::runtime_error(std::string("Transport::write: unable to send identity-frame - ") + zmq_strerror(zmq_errno()));
+         throw std::runtime_error(std::string("RouterImpl::write: unable to send identity-frame - ") + zmq_strerror(zmq_errno()));
       if (zmq_send(__socket, "", 0, ZMQ_SNDMORE) == -1)
-         throw std::runtime_error(std::string("Transport::write: unable to send delimiter-frame - ") + zmq_strerror(zmq_errno()));
+         throw std::runtime_error(std::string("RouterImpl::write: unable to send delimiter-frame - ") + zmq_strerror(zmq_errno()));
       if (zmq_send(__socket, payload.c_str(), payload.length(), 0) == -1)
-         throw std::runtime_error(std::string("Transport::write: unable to send the payload - ") + zmq_strerror(zmq_errno()));
+         throw std::runtime_error(std::string("RouterImpl::write: unable to send the payload - ") + zmq_strerror(zmq_errno()));
    };
 
 private:
@@ -63,7 +61,7 @@ private:
       zmq_msg_init(&frame);
       int received = zmq_msg_recv(&frame, __socket, 0);
       if (received == -1)
-         throw std::runtime_error(std::string("Transport::__receive_frame: unable to receive - ") + zmq_strerror(zmq_errno()));
+         throw std::runtime_error(std::string("RouterImpl::__receive_frame: unable to receive - ") + zmq_strerror(zmq_errno()));
       if (received == 0)
          return std::string("");
       std::string str(static_cast<const char*>(zmq_msg_data(&frame)), zmq_msg_size(&frame));
@@ -112,22 +110,27 @@ struct ListenerImpl
    : Listener
 {
    ListenerImpl(std::string address)
-      : __transport(std::make_shared<Transport>(address))
+      : __router(std::make_shared<RouterImpl>(address))
    {};
 
    std::unique_ptr<Request> accept()
    {
       std::unique_ptr<RequestImpl> request(new RequestImpl());
-      __transport->read(request->__identity, request->__payload);
-      request->__writer = __transport;
+      __router->read(request->__identity, request->__payload);
+      request->__writer = __router;
       return request;
    };
 
 private:
-   std::shared_ptr<Transport> __transport;
+   std::shared_ptr<RouterImpl> __router;
 };
 
 std::unique_ptr<Listener> listen(std::string address)
 {
    return std::unique_ptr<Listener>(new ListenerImpl(address));
+}
+
+std::shared_ptr<Router> route(std::string address)
+{
+   return std::make_shared<RouterImpl>(address);
 }
